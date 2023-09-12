@@ -1,10 +1,11 @@
+const cors = require("cors");
 const express = require("express");
 const app = express();
-const cors = require("cors");
 require("dotenv").config();
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 app.use(express.urlencoded({ extended: true }));
+app.use(cors());
 
 mongoose.connect(process.env.DB_URI);
 
@@ -52,10 +53,17 @@ app.post("/api/users/:_id/exercises", async (req, res) => {
     } else {
       const exerciseObj = new Exercise({
         user_id: user._id,
-        description,
-        duration,
+        description: description ? description : "test",
+        duration: duration ? duration : 60,
         date: date ? new Date(date) : new Date(),
       });
+      if (
+        !exerciseObj.description ||
+        !exerciseObj.duration ||
+        !exerciseObj.date
+      ) {
+        return res.status(400).send("All fields are required");
+      }
       const exercise = await exerciseObj.save();
       res.json({
         _id: user._id,
@@ -109,7 +117,7 @@ app.get("/api/users/:_id/logs", async (req, res) => {
   const log = exercises.map((e) => ({
     description: e.description,
     duration: e.duration,
-    date: e.date.toDateString,
+    date: e.date.toDateString(),
   }));
 
   res.json({
